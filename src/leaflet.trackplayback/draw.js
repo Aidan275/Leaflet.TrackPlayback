@@ -222,14 +222,6 @@ export const Draw = L.Layer.extend({
     if (this._showTrackLine) {
       this._drawTrackLine(trackpoints)
     }
-    // Drawing ship
-    let targetPoint = trackpoints[trackpoints.length - 1]
-    if (this.targetOptions.useImg && this._targetImg) {
-      this._drawShipImage(targetPoint)
-    } else {
-      this._drawShipRadius(targetPoint)
-      this._drawShipCanvas(targetPoint)
-    }
     // Trajectory points drawn
     if (this._showTrackPoint) {
       if (this.trackPointOptions.useCanvas) {
@@ -237,6 +229,14 @@ export const Draw = L.Layer.extend({
       } else {
         this._drawTrackPointsSvg(trackpoints)
       }
+    }
+    // Drawing ship
+    let targetPoint = trackpoints[trackpoints.length - 1]
+    if (this.targetOptions.useImg && this._targetImg) {
+      this._drawShipImage(targetPoint)
+    } else {
+      this._drawShipRadius(targetPoint)
+      this._drawShipCanvas(targetPoint)
     }
   },
 
