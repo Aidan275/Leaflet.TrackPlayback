@@ -1,7 +1,7 @@
 import L from 'leaflet'
 
 /**
- * 轨迹图层
+ * Track layer
  */
 export const TrackLayer = L.Renderer.extend({
 

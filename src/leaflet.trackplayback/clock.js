@@ -1,16 +1,14 @@
 import L from 'leaflet'
 /**
- * 时钟类，控制轨迹播放动画
+ * Clock class, control track playback animation
  */
-export const Clock = L.Class.extend({
-
-  includes: L.Mixin.Events,
+export const Clock = L.Layer.extend({
 
   options: {
-    // 播放速度
-    // 计算方法 fpstime * Math.pow(2, this._speed - 1)
+    // Play speed
+    // Calculation fpstime * Math.pow (2, this._speed - 1)
     speed: 12,
-    // 最大播放速度
+    // Maximum playback speed
     maxSpeed: 65
   },
 
@@ -76,6 +74,10 @@ export const Clock = L.Class.extend({
     return this._trackController.getMaxTime()
   },
 
+  getTrackPoints: function () {
+    return this._trackController.getTrackPoints()
+  },
+
   isPlaying: function () {
     return !!this._intervalID
   },
@@ -83,7 +85,11 @@ export const Clock = L.Class.extend({
   setCursor: function (time) {
     this._curTime = time
     this._trackController.drawTracksByTime(this._curTime)
+    const { prev, curr, next } = this._trackController.getCurrentPoints()
     this.fire('tick', {
+      prev: prev,
+      curr: curr,
+      next: next,
       time: this._curTime
     })
   },
@@ -96,7 +102,8 @@ export const Clock = L.Class.extend({
     }
   },
 
-  // 计算两帧时间间隔，单位：秒
+  // Calculate the time interval between two frames, in seconds
+
   _caculatefpsTime: function (now) {
     let time
     if (this._lastFpsUpdateTime === 0) {
@@ -105,7 +112,7 @@ export const Clock = L.Class.extend({
       time = now - this._lastFpsUpdateTime
     }
     this._lastFpsUpdateTime = now
-    // 将毫秒转换成秒
+    // Convert milliseconds to seconds
     time = time / 1000
     return time
   },
@@ -121,7 +128,11 @@ export const Clock = L.Class.extend({
       isPause = true
     }
     this._trackController.drawTracksByTime(this._curTime)
+    const { prev, curr, next } = this._trackController.getCurrentPoints()
     this.fire('tick', {
+      prev: prev,
+      curr: curr,
+      next: next,
       time: this._curTime
     })
     if (!isPause) this._intervalID = L.Util.requestAnimFrame(this._tick, this)

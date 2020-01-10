@@ -8,15 +8,16 @@ import {
 } from './track'
 
 /**
- * 控制器类
- * 控制轨迹和绘制
+ * Controller class
+ * Control trajectory and drawing
  */
-export const TrackController = L.Class.extend({
+export const TrackController = L.Layer.extend({
 
   initialize: function (tracks = [], draw, options) {
     L.setOptions(this, options)
 
     this._tracks = []
+    this._tps = []
     this.addTrack(tracks)
 
     this._draw = draw
@@ -30,6 +31,10 @@ export const TrackController = L.Class.extend({
 
   getMaxTime: function () {
     return this._maxTime
+  },
+
+  getTrackPoints: function () {
+    return this._tps
   },
 
   addTrack: function (track) {
@@ -47,10 +52,19 @@ export const TrackController = L.Class.extend({
 
   drawTracksByTime: function (time) {
     this._draw.clear()
+    this._drawnTracks = []
     for (let i = 0, len = this._tracks.length; i < len; i++) {
       let track = this._tracks[i]
-      let tps = track.getTrackPointsBeforeTime(time)
-      if (tps && tps.length) this._draw.drawTrack(tps)
+      this._tps = track.getTrackPointsBeforeTime(time)
+      if (this._tps && this._tps.length) this._draw.drawTrack(this._tps)
+    }
+  },
+
+  getCurrentPoints: function () {
+    return {
+      prev: this._tps[this._tps.length - 2],
+      curr: this._tps[this._tps.length - 1],
+      next: this._tracks[0].getAllTrackPoints()[this._tps.length]
     }
   },
 

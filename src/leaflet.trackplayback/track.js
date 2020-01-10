@@ -5,15 +5,16 @@ import {
 } from './util'
 
 /**
- * 轨迹类
+ * Track class
  */
-export const Track = L.Class.extend({
+export const Track = L.Layer.extend({
 
   initialize: function (trackData = [], options) {
     L.setOptions(this, options)
 
     trackData.forEach(item => {
-      // 添加 isOrigin 字段用来标识是否是原始采样点，与插值点区分开
+      // Added the isOrigin field to identify whether it is the original sampling
+      // point and distinguish it from the interpolation point
       item.isOrigin = true
     })
     this._trackPoints = trackData
@@ -50,8 +51,18 @@ export const Track = L.Class.extend({
     return this._trackPoints[this._timeTick[time]]
   },
 
+  getAllTrackPoints: function () {
+    return this._trackPoints
+  },
+
+  _formatDistance: function (distance) {
+    return distance < 1000
+      ? `${distance.toFixed(2)} m`
+      : `${(distance / 1000).toFixed(2)} km`
+  },
+
   _getCalculateTrackPointByTime: function (time) {
-    // 先判断最后一个点是否为原始点
+    // First determine whether the last point is the original point
     let endpoint = this.getTrackPointByTime(time)
     let startPt = this.getStartTrackPoint()
     let endPt = this.getEndTrackPoint()
@@ -60,11 +71,11 @@ export const Track = L.Class.extend({
     let left = 0
     let right = times.length - 1
     let n
-    // 处理只有一个点情况
+    // Handle only one point case
     if (left === right) {
       return endpoint
     }
-    // 通过【二分查找】法查出当前时间所在的时间区间
+    // [Binary search] method to find out the time interval of the current time
     while (right - left !== 1) {
       n = parseInt((left + right) / 2)
       if (time > times[n]) left = n
@@ -79,39 +90,52 @@ export const Track = L.Class.extend({
     startPt = L.point(p0.lng, p0.lat)
     endPt = L.point(p1.lng, p1.lat)
     let s = startPt.distanceTo(endPt)
-    // 不同时间在同一个点情形
+    // At the same point at different times
     if (s <= 0) {
       endpoint = p1
       return endpoint
     }
-    // 假设目标在两点间做匀速直线运动
-    // 求解速度向量，并计算时间 t 目标所在位置
+    // Suppose the target moves in a straight line at a uniform speed between two points
+    // Find the velocity vector and calculate the time t where the target is
     let v = s / (t1 - t0)
+    let r = (p1.radius - p0.radius) / (t1 - t0)
     let sinx = (endPt.y - startPt.y) / s
     let cosx = (endPt.x - startPt.x) / s
     let step = v * (t - t0)
+    let rstep = r * (t - t0)
     let x = startPt.x + step * cosx
     let y = startPt.y + step * sinx
-    // 求目标的运动方向，0-360度
+    let radius = p0.radius + rstep
+    // Find the direction of movement of the target, 0-360 degrees
     let dir = endPt.x >= startPt.x ? (Math.PI * 0.5 - Math.asin(sinx)) * 180 / Math.PI : (Math.PI * 1.5 + Math.asin(sinx)) * 180 / Math.PI
-      
+
     if (endpoint) {
       if (endpoint.dir === undefined) {
         endpoint.dir = dir
+      }
+      if (endpoint.radius === undefined) {
+        endpoint.radius = radius
       }
     } else {
       endpoint = {
         lng: x,
         lat: y,
-        dir: endPt.dir || dir,
+        dir: dir,
         isOrigin: false,
-        time: time
+        time: time,
+        radius: radius,
+        info: [
+          {
+            key: 'Accuracy:',
+            value: this._formatDistance(radius)
+          }
+        ]
       }
     }
     return endpoint
   },
 
-  // 获取某个时间点之前走过的轨迹
+  // Get the trajectory before a certain point in time
   getTrackPointsBeforeTime: function (time) {
     let tpoints = []
     for (let i = 0, len = this._trackPoints.length; i < len; i++) {
@@ -119,7 +143,7 @@ export const Track = L.Class.extend({
         tpoints.push(this._trackPoints[i])
       }
     }
-    // 获取最后一个点，根据时间线性插值而来
+    // Get the last point, linearly interpolated from time
     let endPt = this._getCalculateTrackPointByTime(time)
     if (endPt) {
       tpoints.push(endPt)
@@ -138,7 +162,7 @@ export const Track = L.Class.extend({
     this._updatetimeTick()
   },
 
-  // 轨迹点按时间排序 【冒泡排序】
+  // Track points are sorted by time [bubble sort]
   _sortTrackPointsByTime: function () {
     let len = this._trackPoints.length
     for (let i = 0; i < len; i++) {
@@ -152,7 +176,7 @@ export const Track = L.Class.extend({
     }
   },
 
-  // 为轨迹点建立时间索引，优化查找性能
+  // Time indexing of trajectory points to optimize search performance
   _updatetimeTick: function () {
     this._timeTick = {}
     for (let i = 0, len = this._trackPoints.length; i < len; i++) {

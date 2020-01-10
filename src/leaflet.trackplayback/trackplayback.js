@@ -1,5 +1,4 @@
 import L from 'leaflet'
-
 import {
   Track
 } from './track'
@@ -21,9 +20,7 @@ import * as Util from './util'
  * mutiple track data
  * [single track data, single track data, single track data]
  */
-export const TrackPlayBack = L.Class.extend({
-
-  includes: L.Mixin.Events,
+export const TrackPlayBack = L.Layer.extend({
 
   initialize: function (data, map, options = {}) {
     let drawOptions = {
@@ -34,9 +31,9 @@ export const TrackPlayBack = L.Class.extend({
     }
     this.tracks = this._initTracks(data)
     this.draw = new Draw(map, drawOptions)
+    this.draw.on('click', e => this.fire('click', e), this)
     this.trackController = new TrackController(this.tracks, this.draw)
     this.clock = new Clock(this.trackController, options.clockOptions)
-
     this.clock.on('tick', this._tick, this)
   },
   start: function () {
@@ -71,6 +68,9 @@ export const TrackPlayBack = L.Class.extend({
   getEndTime: function () {
     return this.clock.getEndTime()
   },
+  getTrackPoints: function () {
+    return this.clock.getTrackPoints()
+  },
   isPlaying: function () {
     return this.clock.isPlaying()
   },
@@ -100,6 +100,7 @@ export const TrackPlayBack = L.Class.extend({
   },
   dispose: function () {
     this.clock.off('tick', this._tick)
+    this.clock.stop()
     this.draw.remove()
     this.tracks = null
     this.draw = null
@@ -113,12 +114,12 @@ export const TrackPlayBack = L.Class.extend({
     let tracks = []
     if (Util.isArray(data)) {
       if (Util.isArray(data[0])) {
-        // 多条轨迹
+        // Multiple tracks
         for (let i = 0, len = data.length; i < len; i++) {
           tracks.push(new Track(data[i]))
         }
       } else {
-        // 单条轨迹
+        // Single track
         tracks.push(new Track(data))
       }
     }

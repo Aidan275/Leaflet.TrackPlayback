@@ -2,12 +2,10 @@ import L from 'leaflet'
 
 export const TrackPlayBackControl = L.Control.extend({
 
+  includes: L.Evented.prototype,
+
   options: {
-    position: 'topright',
-    showOptions: true,
-    showInfo: true,
-    showSlider: true,
-    autoPlay: false
+    position: 'bottomleft'
   },
 
   initialize: function (trackplayback, options) {
@@ -26,32 +24,33 @@ export const TrackPlayBackControl = L.Control.extend({
     this.trackPlayBack.off('tick', this._tickCallback, this)
   },
 
-  /**
-   * 根据unix时间戳(单位:秒)获取时间字符串
-   * @param  {[int]} time     [时间戳（精确到秒）]
-   * @param  {[string]} accuracy [精度，日：d, 小时：h,分钟：m,秒：s]
-   * @return {[string]}          [yy:mm:dd hh:mm:ss]
-   */
-  getTimeStrFromUnix: function (time, accuracy = 's') {
-    time = parseInt(time * 1000)
-    let newDate = new Date(time)
-    let year = newDate.getFullYear()
-    let month = (newDate.getMonth() + 1) < 10 ? '0' + (newDate.getMonth() + 1) : newDate.getMonth() + 1
-    let day = newDate.getDate() < 10 ? '0' + newDate.getDate() : newDate.getDate()
-    let hours = newDate.getHours() < 10 ? '0' + newDate.getHours() : newDate.getHours()
-    let minuts = newDate.getMinutes() < 10 ? '0' + newDate.getMinutes() : newDate.getMinutes()
-    let seconds = newDate.getSeconds() < 10 ? '0' + newDate.getSeconds() : newDate.getSeconds()
-    let ret
-    if (accuracy === 'd') {
-      ret = year + '-' + month + '-' + day
-    } else if (accuracy === 'h') {
-      ret = year + '-' + month + '-' + day + ' ' + hours
-    } else if (accuracy === 'm') {
-      ret = year + '-' + month + '-' + day + ' ' + hours + ':' + minuts
-    } else {
-      ret = year + '-' + month + '-' + day + ' ' + hours + ':' + minuts + ':' + seconds
+  formatDay: function (date) {
+    if (date > 3 && date < 21) return 'th'
+    switch (date % 10) {
+      case 1: return 'st'
+      case 2: return 'nd'
+      case 3: return 'rd'
+      default: return 'th'
     }
-    return ret
+  },
+
+  formatTime: function (date) {
+    var hours = date.getHours()
+    var minutes = date.getMinutes()
+    var ampm = hours >= 12 ? 'PM' : 'AM'
+    hours = hours % 12
+    hours = hours || 12 // the hour '0' should be '12'
+    minutes = minutes < 10 ? '0' + minutes : minutes
+    var strTime = hours + ':' + minutes + ' ' + ampm
+    return strTime
+  },
+
+  formatDate: function (timestamp) {
+    var date = new Date(timestamp * 1000)
+    var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    return days[date.getDay()] + ', ' + date.getDate() + this.formatDay(date.getDate()) + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() + ' ' + this.formatTime(date)
   },
 
   _initContainer: function () {
@@ -59,24 +58,19 @@ export const TrackPlayBackControl = L.Control.extend({
     this._container = L.DomUtil.create('div', className)
     L.DomEvent.disableClickPropagation(this._container)
 
-    this._optionsContainer = this._createContainer('optionsContainer', this._container)
-    this._buttonContainer = this._createContainer('buttonContainer', this._container)
-    this._infoContainer = this._createContainer('infoContainer', this._container)
-    this._sliderContainer = this._createContainer('sliderContainer', this._container)
+    this._topContainer = this._createContainer('topContainer', this._container)
+    this._bottomContainer = this._createContainer('bottomContainer', this._container)
 
-    this._pointCbx = this._createCheckbox('show trackPoint', 'show-trackpoint', this._optionsContainer, this._showTrackPoint)
-    this._lineCbx = this._createCheckbox('show trackLine', 'show-trackLine', this._optionsContainer, this._showTrackLine)
+    this._timeContainer = this._createContainer('timeContainer', this._topContainer)
+    this._buttonContainer = this._createContainer('buttonContainer', this._bottomContainer)
+    this._sliderContainer = this._createContainer('sliderContainer', this._bottomContainer)
 
-    this._playBtn = this._createButton('play', 'btn-stop', this._buttonContainer, this._play)
-    this._restartBtn = this._createButton('replay', 'btn-restart', this._buttonContainer, this._restart)
-    this._slowSpeedBtn = this._createButton('slow', 'btn-slow', this._buttonContainer, this._slow)
-    this._quickSpeedBtn = this._createButton('quick', 'btn-quick', this._buttonContainer, this._quick)
-    this._closeBtn = this._createButton('close', 'btn-close', this._buttonContainer, this._close)
+    this._time = this._createTime(this.formatDate(this.trackPlayBack.getCurTime()), 'time-info', this._timeContainer)
 
-    this._infoStartTime = this._createInfo('startTime: ', this.getTimeStrFromUnix(this.trackPlayBack.getStartTime()), 'info-start-time', this._infoContainer)
-    this._infoEndTime = this._createInfo('endTime: ', this.getTimeStrFromUnix(this.trackPlayBack.getEndTime()), 'info-end-time', this._infoContainer)
-    this._infoCurTime = this._createInfo('curTime: ', this.getTimeStrFromUnix(this.trackPlayBack.getCurTime()), 'info-cur-time', this._infoContainer)
-    this._infoSpeedRatio = this._createInfo('speed: ', `X${this.trackPlayBack.getSpeed()}`, 'info-speed-ratio', this._infoContainer)
+    this._playBtn = this._createButton('Play', 'btn-stop', this._buttonContainer, this._play)
+    this._restartBtn = this._createButton('Restart', 'btn-restart', this._buttonContainer, this._restart)
+    this._slowSpeedBtn = this._createButton('Slower', 'btn-slow', this._buttonContainer, this._slow)
+    this._quickSpeedBtn = this._createButton('Faster', 'btn-quick', this._buttonContainer, this._quick)
 
     this._slider = this._createSlider('time-slider', this._sliderContainer, this._scrollchange)
 
@@ -87,47 +81,16 @@ export const TrackPlayBackControl = L.Control.extend({
     return L.DomUtil.create('div', className, container)
   },
 
-  _createCheckbox: function (labelName, className, container, fn) {
-    let divEle = L.DomUtil.create('div', className + ' trackplayback-checkbox', container)
-
-    let inputEle = L.DomUtil.create('input', 'trackplayback-input', divEle)
-    let inputId = `trackplayback-input-${L.Util.stamp(inputEle)}`
-    inputEle.setAttribute('type', 'checkbox')
-    inputEle.setAttribute('id', inputId)
-
-    let labelEle = L.DomUtil.create('label', 'trackplayback-label', divEle)
-    labelEle.setAttribute('for', inputId)
-    labelEle.innerHTML = labelName
-
-    L.DomEvent.on(inputEle, 'change', fn, this)
-
-    return divEle
-  },
-
   _createButton: function (title, className, container, fn) {
-    let link = L.DomUtil.create('a', className, container)
+    var link = L.DomUtil.create('a', 'button', container)
     link.href = '#'
     link.title = title
-
-    /*
-     * Will force screen readers like VoiceOver to read this as "Zoom in - button"
-     */
     link.setAttribute('role', 'button')
     link.setAttribute('aria-label', title)
-
     L.DomEvent.disableClickPropagation(link)
     L.DomEvent.on(link, 'click', fn, this)
 
-    return link
-  },
-
-  _createInfo: function (title, info, className, container) {
-    let infoContainer = L.DomUtil.create('div', 'info-container', container)
-    let infoTitle = L.DomUtil.create('span', 'info-title', infoContainer)
-    infoTitle.innerHTML = title
-    let infoEle = L.DomUtil.create('span', className, infoContainer)
-    infoEle.innerHTML = info
-    return infoEle
+    return L.DomUtil.create('div', className, link)
   },
 
   _createSlider: function (className, container, fn) {
@@ -136,29 +99,20 @@ export const TrackPlayBackControl = L.Control.extend({
     sliderEle.setAttribute('min', this.trackPlayBack.getStartTime())
     sliderEle.setAttribute('max', this.trackPlayBack.getEndTime())
     sliderEle.setAttribute('value', this.trackPlayBack.getCurTime())
+    sliderEle.setAttribute('title', this.formatDate(this.trackPlayBack.getCurTime()))
 
     L.DomEvent.on(sliderEle, 'click mousedown dbclick', L.DomEvent.stopPropagation)
       .on(sliderEle, 'click', L.DomEvent.preventDefault)
       .on(sliderEle, 'change', fn, this)
-      .on(sliderEle, 'mousemove', fn, this)
+      .on(sliderEle, 'input', fn, this)
 
     return sliderEle
   },
 
-  _showTrackPoint (e) {
-    if (e.target.checked) {
-      this.trackPlayBack.showTrackPoint()
-    } else {
-      this.trackPlayBack.hideTrackPoint()
-    }
-  },
-
-  _showTrackLine (e) {
-    if (e.target.checked) {
-      this.trackPlayBack.showTrackLine()
-    } else {
-      this.trackPlayBack.hideTrackLine()
-    }
+  _createTime: function (info, className, container) {
+    let timeInfo = L.DomUtil.create('span', className, container)
+    timeInfo.innerHTML = info
+    return timeInfo
   },
 
   _play: function () {
@@ -166,34 +120,30 @@ export const TrackPlayBackControl = L.Control.extend({
     if (hasClass) {
       L.DomUtil.removeClass(this._playBtn, 'btn-stop')
       L.DomUtil.addClass(this._playBtn, 'btn-start')
-      this._playBtn.setAttribute('title', 'stop')
+      this._playBtn.setAttribute('title', 'Stop')
       this.trackPlayBack.start()
     } else {
       L.DomUtil.removeClass(this._playBtn, 'btn-start')
       L.DomUtil.addClass(this._playBtn, 'btn-stop')
-      this._playBtn.setAttribute('title', 'play')
+      this._playBtn.setAttribute('title', 'Play')
       this.trackPlayBack.stop()
     }
   },
 
   _restart: function () {
-    // 播放开始改变播放按钮样式
+    // Playback changes play button style
     L.DomUtil.removeClass(this._playBtn, 'btn-stop')
     L.DomUtil.addClass(this._playBtn, 'btn-start')
-    this._playBtn.setAttribute('title', 'stop')
+    this._playBtn.setAttribute('title', 'Stop')
     this.trackPlayBack.rePlaying()
   },
 
   _slow: function () {
     this.trackPlayBack.slowSpeed()
-    let sp = this.trackPlayBack.getSpeed()
-    this._infoSpeedRatio.innerHTML = `X${sp}`
   },
 
   _quick: function () {
     this.trackPlayBack.quickSpeed()
-    let sp = this.trackPlayBack.getSpeed()
-    this._infoSpeedRatio.innerHTML = `X${sp}`
   },
 
   _close: function () {
@@ -207,19 +157,22 @@ export const TrackPlayBackControl = L.Control.extend({
   _scrollchange: function (e) {
     let val = Number(e.target.value)
     this.trackPlayBack.setCursor(val)
+    if (e.type === 'change') {
+      this.fire('change', {
+        trackPoints: this.trackPlayBack.getTrackPoints()
+      })
+    }
   },
 
   _tickCallback: function (e) {
-    // 更新时间
-    let time = this.getTimeStrFromUnix(e.time)
-    this._infoCurTime.innerHTML = time
-    // 更新时间轴
     this._slider.value = e.time
-    // 播放结束后改变播放按钮样式
+    this._time.innerHTML = this.formatDate(e.time)
+    this._slider.setAttribute('title', this.formatDate(e.time))
+    // Change play button style after playback ends
     if (e.time >= this.trackPlayBack.getEndTime()) {
       L.DomUtil.removeClass(this._playBtn, 'btn-start')
       L.DomUtil.addClass(this._playBtn, 'btn-stop')
-      this._playBtn.setAttribute('title', 'play')
+      this._playBtn.setAttribute('title', 'Play')
       this.trackPlayBack.stop()
     }
   }
