@@ -1,15 +1,12 @@
 import L from 'leaflet'
 
-import {
-  TrackLayer
-} from './tracklayer'
+import { TrackLayer } from './tracklayer'
 
 /**
  * Drawing class
  * Complete the drawing of trajectory lines, trajectory points and targets
  */
 export const Draw = L.Layer.extend({
-
   trackPointOptions: {
     isDraw: true,
     useCanvas: true,
@@ -144,9 +141,11 @@ export const Draw = L.Layer.extend({
   _trackLayerUpdate: function () {
     if (this._bufferTracks.length) {
       this._clearLayer()
-      this._bufferTracks.forEach(function (element, index) {
-        this._drawTrack(element)
-      }.bind(this))
+      this._bufferTracks.forEach(
+        function (element, index) {
+          this._drawTrack(element)
+        }.bind(this)
+      )
     }
   },
 
@@ -203,14 +202,14 @@ export const Draw = L.Layer.extend({
     let latlng = L.latLng(trackpoint.lat, trackpoint.lng)
 
     if (trackpoint.info) {
-      let tooltip = this._tooltip = L.tooltip(this.toolTipOptions)
+      let tooltip = (this._tooltip = L.tooltip(this.toolTipOptions))
       tooltip.setLatLng(latlng)
       tooltip.addTo(this._map)
       tooltip.setContent(this._getTooltipText(trackpoint))
     }
 
     if (trackpoint.radius) {
-      let circle = this._circle = L.circle(this.circleOptions)
+      let circle = (this._circle = L.circle(this.circleOptions))
       circle.setLatLng(latlng)
       circle.setRadius(trackpoint.radius)
       circle.addTo(this._map)
@@ -234,6 +233,7 @@ export const Draw = L.Layer.extend({
     let targetPoint = trackpoints[trackpoints.length - 1]
     if (this.targetOptions.useImg && this._targetImg) {
       this._drawShipImage(targetPoint)
+      this._drawShipRadius(targetPoint)
     } else {
       this._drawShipRadius(targetPoint)
       this._drawShipCanvas(targetPoint)
@@ -293,7 +293,10 @@ export const Draw = L.Layer.extend({
       if (trackpoints[i].isOrigin) {
         let latLng = L.latLng(trackpoints[i].lat, trackpoints[i].lng)
         let cricleMarker = L.circleMarker(latLng, this.trackPointOptions)
-        cricleMarker.bindTooltip(this._getTooltipText(trackpoints[i]), this.toolTipOptions)
+        cricleMarker.bindTooltip(
+          this._getTooltipText(trackpoints[i]),
+          this.toolTipOptions
+        )
         this._trackPointFeatureGroup.addLayer(cricleMarker)
       }
     }
@@ -342,7 +345,7 @@ export const Draw = L.Layer.extend({
     }
 
     let latlng = L.latLng(trackpoint.lat, trackpoint.lng)
-    let circle = this._shipRadius = L.circle(this.circleOptions)
+    let circle = (this._shipRadius = L.circle(this.circleOptions))
     circle.setLatLng(latlng)
     circle.setRadius(trackpoint.radius)
     circle.addTo(this._map)
@@ -360,7 +363,13 @@ export const Draw = L.Layer.extend({
     this._ctx.save()
     this._ctx.translate(point.x, point.y)
     this._ctx.rotate((Math.PI / 180) * dir)
-    this._ctx.drawImage(this._targetImg, 0 - offset.x, 0 - offset.y, width, height)
+    this._ctx.drawImage(
+      this._targetImg,
+      0 - offset.x,
+      0 - offset.y,
+      width,
+      height
+    )
     this._ctx.restore()
   },
 
@@ -399,7 +408,9 @@ export const Draw = L.Layer.extend({
   },
 
   _getLayerPoint: function (trackpoint) {
-    return this._map.latLngToLayerPoint(L.latLng(trackpoint.lat, trackpoint.lng))
+    return this._map.latLngToLayerPoint(
+      L.latLng(trackpoint.lat, trackpoint.lng)
+    )
   }
 })
 
