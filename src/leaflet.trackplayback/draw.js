@@ -13,17 +13,17 @@ export const Draw = L.Layer.extend({
     stroke: true,
     color: '#000',
     fill: true,
-    fillColor: '#3388ff',
+    fillColor: '#278edd',
     opacity: 1,
     radius: 5
   },
   trackLineOptions: {
     isDraw: true,
     stroke: true,
-    color: '#3388ff',
+    color: '#278edd',
     weight: 2,
     fill: false,
-    fillColor: '#000',
+    fillColor: '#278edd',
     opacity: 1
   },
   targetOptions: {
@@ -32,8 +32,8 @@ export const Draw = L.Layer.extend({
     showText: false,
     width: 8,
     height: 18,
-    color: '#00f', // stroke color
-    fillColor: '#9FD12D'
+    color: '#000', // stroke color
+    fillColor: '#89c257'
   },
   toolTipOptions: {
     offset: [0, 0],
@@ -41,7 +41,11 @@ export const Draw = L.Layer.extend({
     permanent: true
   },
   circleOptions: {
-    fillColor: '#00f'
+    fillColor: '#278edd'
+  },
+  shipRadiusOptions: {
+    color: '#89c257',
+    fillColor: '#89c257'
   },
 
   initialize: function (map, options) {
@@ -209,8 +213,7 @@ export const Draw = L.Layer.extend({
     }
 
     if (trackpoint.radius) {
-      let circle = (this._circle = L.circle(this.circleOptions))
-      circle.setLatLng(latlng)
+      let circle = (this._circle = L.circle(latlng, this.circleOptions))
       circle.setRadius(trackpoint.radius)
       circle.addTo(this._map)
     }
@@ -232,8 +235,8 @@ export const Draw = L.Layer.extend({
     // Drawing ship
     let targetPoint = trackpoints[trackpoints.length - 1]
     if (this.targetOptions.useImg && this._targetImg) {
-      this._drawShipImage(targetPoint)
       this._drawShipRadius(targetPoint)
+      this._drawShipImage(targetPoint)
     } else {
       this._drawShipRadius(targetPoint)
       this._drawShipCanvas(targetPoint)
@@ -345,8 +348,7 @@ export const Draw = L.Layer.extend({
     }
 
     let latlng = L.latLng(trackpoint.lat, trackpoint.lng)
-    let circle = (this._shipRadius = L.circle(this.circleOptions))
-    circle.setLatLng(latlng)
+    let circle = (this._shipRadius = L.circle(latlng, this.shipRadiusOptions))
     circle.setRadius(trackpoint.radius)
     circle.addTo(this._map)
   },
